@@ -1,6 +1,6 @@
-# Skjelettprosjekt for TDT4100 prosjekt V2025
+# Skjelettprosjekt for TDT4100 prosjekt V2026
 
-Dette repoet er et skjelettprosjekt for TDT4100 prosjektet våren 2025.
+Dette repoet er et skjelettprosjekt for TDT4100 prosjektet våren 2026.
 
 Vi har opprettet et eksempelprosjekt her, som er ment for at dere skal kunne komme raskt i gang med deres eget prosjekt.
 
@@ -70,16 +70,17 @@ I tillegg til alt dette er det laget en liten [eksempel-testfil](src/test/java/e
 
 | Nøkkelpunkt                              | Beskrivelse                             |
 | ---------------------------------------- | --------------------------------------- |
-| Innleveringsfrist                        | 11. april                               |
-| Demonstrasjonsfrist hos læringsassistent | 25. april                               |
+| Innleveringsfrist                        | 10. april                               |
+| Demonstrasjonsfrist hos læringsassistent | 17. april                               |
 | Gruppestørrelse                          | 1 eller 2 personer                      |
 
 ### Anbefalte perioder å jobbe med prosjektet
 
 | Uke   | Fra  | Til  | Beskrivelse                                 |
 | ----- | ---- | ---- | ------------------------------------------- |
-| 13    | 24/3 | 31/3 | Grunnklasser og brukergrensesnitt           |
-| 14    | 31/3 |  6/4 | Lagring og filhåndtering                    |
-| 15    |  7/4 | 11/4 | Fullføre appen med tilhørende dokumentasjon |
+| 12    | 16/3 | 20/3 | Grunnklasser og brukergrensesnitt           |
+| 13    | 23/3 |  27/3 | Lagring og filhåndtering                   |
+| 14    | 30/3 |  3/4 | Chille og grille på påskeferie!            |
+| 15    |  6/4 | 10/4 | Fullføre appen med tilhørende dokumentasjon |
 
 **_LYKKE TIL_**
