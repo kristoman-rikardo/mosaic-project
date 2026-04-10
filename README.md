@@ -135,11 +135,15 @@ An important design challenge we worked through was that the upload button initi
 
 While the `Matching` class has penalty constants defined (`PENALTY_PREVIOUS`, `PENALTY_ABOVEDIAG`, etc.), the matching algorithm is a single monolithic method. A more extensible design could have used a strategy pattern — a `MatchingStrategy` interface — so different scoring approaches could be swapped in without rewriting `Matching` itself.
 
+Another point is my strategy of doing the validation and rendering within the controller. It would perhaps be a better strategy to move more logic outside it, but not having a lot of confidence in my front end abilities held me back. I did too much validation inside, as well as the logic for file management and rendering (both could be standalone classes). 
+
 ### Testing
 
 Testing was done primarily through manual end-to-end runs: uploading a range of master images (landscape, portrait, square), varying tile library sizes, and checking the visual output. We also tested the save/load cycle by saving a project to `.txt` and reopening it.
 
 For the `checkFile` and `checkFiles` methods in `MosaicController` (which validate file formats), the logic is straightforward enough that unit tests would have been quick to write and high-value — for example, asserting that `.txt` files are rejected and that `null` input returns `false`.
+
+I also regret not doing more intermediate tests, but it was a sick feeling having written all the files and running it for the first time, somewhat working. Running more tests underway would smooth things out, making it less risky. 
 
 ---
 
