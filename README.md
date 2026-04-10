@@ -2,10 +2,15 @@
 
 ### Lingo:
 **Mosaic:** image of images. 
+
 **Master image:** the image the user first uploads and want to replicate with a mosaic. 
+
 **Grid:** the parts we split the master image into. The size of the grid is the same as the resolution of the mosaic. 
+
 **Cell:** square in the grid. 
+
 **Tiles:** the images the user uploads after the master, with which we make the mosaic.
+
 **RGB:** color vaues of red, blue and green. Why not yellow? I don't know. 
 
 ---
