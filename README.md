@@ -8,92 +8,135 @@
 **Tiles:** the images the user uploads after the master, with which we make the mosaic.
 **RGB:** color vaues of red, blue and green. Why not yellow? I don't know. 
 
+---
 
+## 1. Application Description
 
+The Mosaic Generator takes any image and recreates it as a photo mosaic — (ai wrote this part coming, sry guys) a grid where each cell is replaced by a smaller image (tile) that best matches the color of that part of the original.
 
-# Skjelettprosjekt for TDT4100 prosjekt V2026
+The user starts by uploading a **master image** and entering a **minimum grid resolution** (e.g. 10 means the shortest side is divided into at least 10 cells). `MasterImgHandling` reads the image, calculates the appropriate cell size, and walks across the image row by row, computing the average RGB value for each square cell. These values are stored as an ordered list.
 
-Dette repoet er et skjelettprosjekt for TDT4100 prosjektet våren 2026.
+Next, the user uploads a **library of tile images**. `TileImgHandling` processes each one, computing its average RGB and storing the results in a `HashMap<File, List<Integer>>`.
 
-Vi har opprettet et eksempelprosjekt her, som er ment for at dere skal kunne komme raskt i gang med deres eget prosjekt.
+`Matching` then iterates over every cell and scores all tiles using a perceptually weighted color distance formula. Tiles that appeared in adjacent cells receive a score penalty to reduce repetition. The tile with the best score is selected for each cell. Also implemented some randomness here. Feel free to adjust the params. 
 
-## TL;DR
+The resulting mosaic is rendered in an interactive, zoomable `GridPane` in the JavaFX UI. The project can be saved to and loaded from a `.txt` file, which stores the column count and the ordered list of tile file paths.
 
-Lag en ny mappe i `src/main/java/` som er deres prosjekt. Opprett en startfil for appen, slik som [ExampleProjectApp.java](src/main/java/exampleproject/ExampleProjectApp.java) og en kontroller som [ExampleProjectController.java](src/main/java/exampleproject/ExampleProjectController.java) i denne nye mappen. Lag så en mappe i `src/main/resources/` med samme navn som prosjektet deres og et view som [App.fxml](src/main/resources/exampleproject/App.fxml) i denne nye mappen.
+---
 
-**Eventuelt**: Endre navn på filer og mapper fra "ExampleProject" til deres prosjektnavn.
+## 2. Class Diagram
 
-## Litt rask info
+The diagram below shows the main class relationships in the application. The key architectural decision is that `MosaicController` acts purely as a coordinator — it delegates all image processing to the model classes and never performs pixel-level operations itself.
 
-Allerede nå er det mulig å kjøre filen [ExampleProjectApp.java](src/main/java/exampleproject/ExampleProjectApp.java) i VS Code for å få opp en liten kalkulator-app.
+**Assumption:** `MasterCellImg` and `TileImg` are not shown with full internal state for brevity — they inherit all color-scoring logic from `AbstractImg`.
 
-Denne filen er "startfilen" til applikasjonen. Her settes tittel på appen, hvilken FXML-fil som skal brukes, og den er ansvarlig for å starte selve applikasjonen:
+```mermaid
+classDiagram
+    class Scorable {
+        <<interface>>
+        +getColor() List~Integer~
+    }
 
-```java
-primaryStage.setTitle("Example App"); // Setter tittel på vinduet
-primaryStage.setScene(new Scene(FXMLLoader.load(getClass().getResource("App.fxml")))); // Sier at appen skal bruke "App.fxml"
-primaryStage.show(); // Viser vinduet
+    class AbstractImg {
+        <<abstract>>
+        #image : BufferedImage
+        +getColor() List~Integer~
+        +getWidth() int
+        +getHeight() int
+        +getSize() int
+    }
+
+    class MasterCellImg {
+        +MasterCellImg(BufferedImage image)
+    }
+
+    class TileImg {
+        +TileImg(File file)
+    }
+
+    class MasterImgHandling {
+        -masterImg : BufferedImage
+        -cellColorList : List~List~Integer~~
+        -minResolution : int
+        -nCellsWide : int
+        -nCellsTall : int
+        -cellSize : int
+        +squaresGrid()
+        +scoreCell(int, int, int)
+        +getCellColorList() List
+        +getnCellsWide() int
+    }
+
+    class TileImgHandling {
+        -tileColorMap : HashMap~File, List~Integer~~
+        +scoreTile(File)
+        +getTileColorMap() HashMap
+    }
+
+    class Matching {
+        -cellColorList : List~List~Integer~~
+        -tileColorMap : HashMap~File, List~Integer~~
+        -nCellsWide : int
+        -PENALTY_PREVIOUS : double
+        -PENALTY_ABOVEDIAG : double
+        +match() List~File~
+        +computeScore(int, int, int, int, int, int) double
+    }
+
+    class MosaicController {
+        -master : MasterImgHandling
+        -tiles : TileImgHandling
+        -mosaicList : List~File~
+        +handleMasterUpload()
+        +handleTilesUpload()
+        +goToStep3()
+        +saveProject()
+        +openProject()
+        +checkFile(File) boolean
+        +checkFiles(List~File~) boolean
+    }
+
+    Scorable <|.. AbstractImg : implements
+    AbstractImg <|-- MasterCellImg : extends
+    AbstractImg <|-- TileImg : extends
+    MasterImgHandling --> MasterCellImg : creates
+    TileImgHandling --> TileImg : creates
+    MosaicController --> MasterImgHandling : owns
+    MosaicController --> TileImgHandling : owns
+    MosaicController --> Matching : creates and uses
+    Matching ..> MasterImgHandling : receives cellColorList
+    Matching ..> TileImgHandling : receives tileColorMap
 ```
 
-Kontrolleren til applikasjonen er [ExampleProjectController.java](src/main/java/exampleproject/ExampleProjectController.java). Denne filen er "bindeleddet" mellom FXML-filen(e) og klassen(e) som skal brukes i applikasjonen. I dette eksempelprosjektet har den to metoder: `initCalculator` og `handleButtonClick`. I tillegg har den noen felter som er annotert med `@FXML`. Dette viser at de tilhører [FXML-filen](src/main/resources/exampleproject/App.fxml) vår. Her er navnet på variablene viktige. F.eks er `private Label result` på linje 12 bundet til `Label`-feltet på linje 15 i [FXML-filen](src/main/resources/exampleproject/App.fxml), siden denne har en `fx:id="result"` og variabelen vår heter `result`:
+---
 
-```java
-@FXML
-private Label result; // Fra ExampleProjectApp.java
+## 3. OOP Reflection
 
-<Label fx:id="result" layoutX="257.0" layoutY="244.0" /> // Fra App.fxml
-```
+### What OOP concepts are covered in the project?
 
-Noe liknende skjer med metoden `handleButtonClick`, som også er annotert med `@FXML`. Dette gjøres slik at vi "får tak i" denne metoden fra [FXML-filen](src/main/resources/exampleproject/App.fxml). `Button`-feltet i [FXML-filen](src/main/resources/exampleproject/App.fxml) har en `onAction="#handleButtonClick"`, som vil si at metoden `handleButtonClick`, som er annotert med `@FXML`, blir kjørt når vi trykker på knappen:
+The project covers several central OOP concepts.
 
-```xml
-<Button layoutX="271.0" layoutY="188.0" mnemonicParsing="false" onAction="#handleButtonClick" text="Kalkuler" /> <!-- Fra App.fxml -->
-```
+**Encapsulation** is used throughout. Each class owns and protects its own state — `MasterImgHandling` keeps `cellColorList` and pixel dimensions private, exposing only what is needed through getters. `TileImgHandling` wraps its `HashMap` internally, and `Matching` maintains the `mosaicList` without letting callers modify it mid-computation. No class reaches into another class's fields directly; everything goes through defined methods.
 
-Det som gjør at [kontrolleren](src/main/java/exampleproject/ExampleProjectController.java) og [FXML-filen](src/main/resources/exampleproject/App.fxml) er koblet sammen er attributten `fx:controller='exampleproject.ExampleProjectController'` på det aller ytterste elementet i [FXML-filen](src/main/resources/exampleproject/App.fxml).
+**Inheritance** is used via the `AbstractImg` class. Both `MasterCellImg` (representing one cell cut from the master image) and `TileImg` (representing a full tile) share the same pixel-averaging logic. Rather than duplicating the `getColor()` method in both, this logic lives once in `AbstractImg` and both subclasses inherit it. This keeps the scoring logic consistent: whether we are scoring a cell or a tile, the algorithm is identical.
 
-```xml
-<AnchorPane fx:id="background" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="exampleproject.ExampleProjectController"> <!-- Fra App.fxml -->
-```
+**Interface / contract-based design** is used with the `Scorable` interface, which declares `getColor()`. `AbstractImg` implements this interface, meaning both `MasterCellImg` and `TileImg` are guaranteed to be scorable by contract. This makes `Matching` not need to know whether it is comparing a master cell or a tile — both expose the same shape of data.
 
-Så, når vi trykker på knappen i appen blir som sagt metoden `handleButtonClick` kjørt. Det som skjer inne i denne metoden er først at vi oppretter en ny [kalkulator](src/main/java/exampleproject/Calculator.java). Ved opprettelse av en kalkulator trenger vi en `operator`. Denne henter vi ut fra hva en bruker av appen har skrevet inn i `TextField`-feltet med `fx:id="operator"`. Siden vi allerede har opprettet en variabel `private TextField operator`, som er annotert med `@FXML`, er denne allerede linket til dette `TextField`-feltet, og vi kan hente ut teksten som er skrevet inn med `operator.getText()`.
+**Model-View-Controller (MVC)** is the overall architecture. `App.fxml` is the **View** — it defines the UI layout and binds buttons to controller methods without containing any logic. `MosaicController` is the **Controller** — it handles user events, validates input, and coordinates the flow. The **Model** consists of `MasterImgHandling`, `TileImgHandling`, and `Matching`, which handle all image processing and matching logic with no knowledge of the UI.
 
-```java
-initCalculator(operator.getText()); // Kaller på initCalculator som oppretter en ny kalkulator. Operator.getText() henter ut teksten som er skrevet inn i `operator`-feltet.
-```
+An important design challenge we worked through was that the upload button initially tried to do too much — it both took in the file and immediately processed the master image. This broke MVC by mixing controller responsibilities (responding to a user action) with model work (reading pixels). We decoupled this by separating upload (`handleMasterUpload`) from processing (`goToStep2`), so the controller only triggers the model when all inputs are ready.
 
-Det samme gjelder nedover i metoden; vi henter ut verdier fra `firstNumber` og `secondNumber`. Det som er verdt å merke seg her er at de blir hentet ut som `String`s, men kalkulatoren vår krever `int`s. Derfor gjør vi de også om til integers. Her bør man og være litt forsiktige, da det ikke er gitt at brukere skriver inn gyldige tall. Derfor har vi wrappet dette inn i en `try/catch`, som sier ifra dersom tallet er ugyldig.
+### What OOP concepts could have been used more?
 
-I tillegg til alt dette er det laget en liten [eksempel-testfil](src/test/java/exampleproject/CalculatorTest.java). Ingenting spennende som skjer her - det er en test for konstruktøren til [kalkulator-klassen vår](src/main/java/exampleproject/Calculator.java), samt en test for metoden `calculate` som den har. Alle tester dere skriver til klassene deres legges altså inn i mappen `src/test/java/<deres_prosjekt>/`.
+While the `Matching` class has penalty constants defined (`PENALTY_PREVIOUS`, `PENALTY_ABOVEDIAG`, etc.), the matching algorithm is a single monolithic method. A more extensible design could have used a strategy pattern — a `MatchingStrategy` interface — so different scoring approaches could be swapped in without rewriting `Matching` itself.
 
-## For å komme i gang med deres eget prosjekt
+### Testing
 
-1. Lag et eget repo (repository) via templaten på [GitHub](https://git.ntnu.no/tdt4100/prosjekt-base/). En mer detaljert oppskrift på dette finner dere på Blackboard under Prosjekt->FAQ.
-2. Inviter gruppemedlemmene dine til dette repoet, og gi de minst en `Developer`-rolle (helst `Maintain`, men `Admin` funker også). Dette kan gjøres under Settings->Collaborators and teams->Add people.
-3. Klon prosjektet et sted på maskinen deres.
-4. Lag en ny mappe i `src/main/java/` som er deres prosjekt.
-5. Opprett en startfil for appen deres, slik som [ExampleProjectApp.java](src/main/java/exampleproject/ExampleProjectApp.java) og en kontroller som [ExampleProjectController.java](src/main/java/exampleproject/ExampleProjectController.java) i deres nye prosjektmappe.
-6. Opprett en ny mappe i `src/main/resources/` som er deres prosjekt.
-7. Opprett en FXML-fil, slik som [App.fxml](src/main/resources/exampleproject/App.fxml) i deres nye prosjektmappe i `src/main/resources/`.
-8. **HUSK** å legge inn `fx:controller='<deres_prosjekt>.<deres_kontroller>'` på det aller ytterste elementet i den nye FXML-filen deres, ellers vil ikke appen starte.
+Testing was done primarily through manual end-to-end runs: uploading a range of master images (landscape, portrait, square), varying tile library sizes, and checking the visual output. We also tested the save/load cycle by saving a project to `.txt` and reopening it.
 
-**Eventuelt**: Endre navn på filer og mapper fra "ExampleProject" til deres prosjektnavn.
+For the `checkFile` and `checkFiles` methods in `MosaicController` (which validate file formats), the logic is straightforward enough that unit tests would have been quick to write and high-value — for example, asserting that `.txt` files are rejected and that `null` input returns `false`.
 
-## Reminder av nøkkelpunkter
+---
 
-| Nøkkelpunkt                              | Beskrivelse                             |
-| ---------------------------------------- | --------------------------------------- |
-| Innleveringsfrist                        | 10. april                               |
-| Demonstrasjonsfrist hos læringsassistent | 17. april                               |
-| Gruppestørrelse                          | 1 eller 2 personer                      |
-
-### Anbefalte perioder å jobbe med prosjektet
-
-| Uke   | Fra  | Til  | Beskrivelse                                 |
-| ----- | ---- | ---- | ------------------------------------------- |
-| 12    | 16/3 | 20/3 | Grunnklasser og brukergrensesnitt           |
-| 13    | 23/3 |  27/3 | Lagring og filhåndtering                   |
-| 14    | 30/3 |  3/4 | Chille og grille på påskeferie!            |
-| 15    |  6/4 | 10/4 | Fullføre appen med tilhørende dokumentasjon |
-
-**_LYKKE TIL_**
+## 4. AI Declaration
+**Now, the big question**, the __AI__ question. It is now me, the human Kristoffer, writing this. After a fun and intensive period of working on this project, I can with sincerly say that this is one of the projects I have done where I have __*really*__ tried to think more myself, without AI. This made it hard, fun and a experienec filled with revelations. It was fun writing the logic, but major parts of the frontend, except for the fun logic and the parts ochestrating it all, are written with the help of Gemini Pro. Thanks. Also, the text answering the questions with the flawless english is written by Sonnet 4.6. I truly believe AI is here to stay, and that we optimistically that we are all slightly doomed (for the better?). 

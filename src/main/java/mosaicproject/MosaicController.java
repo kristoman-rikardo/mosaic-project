@@ -122,7 +122,7 @@ public class MosaicController {
     public void goToStep3() {
         try {
             this.tiles = new TileImgHandling(this.tileList, this.minRes);
-            Matching matching = new Matching(master.getCellColorList(), tiles.getTileColorMap());
+            Matching matching = new Matching(master.getCellColorList(), tiles.getTileColorMap(), master.getnCellsWide());
             this.mosaicList = matching.match();
             mosaicGrid.getChildren().clear();
             int cols = master.getnCellsWide();

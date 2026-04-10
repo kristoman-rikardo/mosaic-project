@@ -11,15 +11,20 @@ public class Matching {
     private HashMap<File, List<Integer>> tileColorMap = new HashMap<>();
     private List<File> mosaicList = new ArrayList<>();
     private boolean firstCompute = true;
-    private final double PENALTY_PREVIOUS = 0.5;
+    private int nCellsWide;
+    private final double PENALTY_PREVIOUS = 0.7;
     private final double PENALTY_RANDOMNESS = 0.05; // in my short time i will not bother with vertical similarity so i just introduce some randomness to make it better. 
-    private final double PENALTY_SECOND_RANDOMNESS = 0.5;
+    private final double PENALTY_SECOND_RANDOMNESS = 0.7;
+    private final double PENALTY_ABOVEDIAG = 0.7;
+    
 
-    public Matching(List<List<Integer>> cellColorList, HashMap<File, List<Integer>> tileColorMap) {
+    public Matching(List<List<Integer>> cellColorList, HashMap<File, List<Integer>> tileColorMap, int nCellsWide) {
         System.out.println("Matching successfully called. CellColorList size: " + cellColorList.size() + ". TileColorMap size: " + tileColorMap.size() + ".");
-        if (cellColorList == null || tileColorMap == null || cellColorList.size() == 0 || tileColorMap.size() == 0) throw new IllegalArgumentException("Cannot match empty lists with one another");
+        if (cellColorList == null || tileColorMap == null || cellColorList.size() == 0 || tileColorMap.size() == 0 || nCellsWide < 0) throw new IllegalArgumentException("Cannot match empty lists with one another");
         this.cellColorList = cellColorList;
         this.tileColorMap = tileColorMap;
+        this.nCellsWide = nCellsWide;
+
     }
 
     public List<File> match() {
@@ -36,12 +41,20 @@ public class Matching {
                 int g_t = entry.getValue().get(1);
                 int b_t = entry.getValue().get(2);
                 double score = computeScore(r_c, r_t, g_c, g_t, b_c, b_t);
-                if (mosaicList.size() > 1 && mosaicList.get(mosaicList.size() - 1).equals(topFile)) {
-                    score += PENALTY_PREVIOUS + Math.random() * PENALTY_RANDOMNESS; // add a small penalty if this tile was the best result for the former cell. 
+                if (mosaicList.size() > 1 && mosaicList.get(mosaicList.size() - 1).equals(entry.getKey())) {
+                    score -= PENALTY_PREVIOUS + Math.random() * PENALTY_RANDOMNESS; // add a small penalty if this tile was the best result for the former cell. 
                 }
                 if (mosaicList.size() > 2 && mosaicList.get(mosaicList.size() - 2).equals(topFile)) {
-                    score += Math.random() * PENALTY_SECOND_RANDOMNESS; // add a small penalty if this tile was the best result for the second last cell. 
+                    score -= Math.random() * PENALTY_SECOND_RANDOMNESS; // add a small penalty if this tile was the best result for the second last cell. 
                 }
+                int i = mosaicList.size();  // current index being filled
+                File leftNeighbor  = (i % nCellsWide != 0)  ? mosaicList.get(i - 1)          : null;
+                File aboveNeighbor = (i >= nCellsWide)       ? mosaicList.get(i - nCellsWide)  : null;
+                // Apply penalty to current candidate:
+                if (entry.getKey().equals(leftNeighbor) || entry.getKey().equals(aboveNeighbor)) {
+                    score -= PENALTY_ABOVEDIAG;  // subtract to discourage (score closer to 1 = better)
+                }
+
                 if (score > topScore) {
                     topFile = entry.getKey();
                     topScore = score;
