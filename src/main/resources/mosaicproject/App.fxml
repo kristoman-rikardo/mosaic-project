@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.Group?>
+
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="mosaicproject.MosaicController"
+           prefWidth="800" prefHeight="600">
+
+    <VBox fx:id="step1" spacing="20" alignment="CENTER">
+        <Label text="Step 1: Upload Master Image and Minimum Resolution"/>
+         <Button text="Upload Master Image" onAction="#handleMasterUpload" maxWidth="300"/>
+         <Label fx:id="masterFileNameLabel" text="No file chosen" textFill="gray"/>
+        <TextField fx:id="minResField" promptText="Grid Size (e.g. 10 for 10x10)" maxWidth="300"/>
+        <Button text="Next Step" onAction="#goToStep2"/>
+    </VBox>
+
+    <VBox fx:id="step2" spacing="20" alignment="CENTER" visible="false">
+        <Label text="Step 2: Upload Tile Images (The more, the better)"/>
+        <Button text="Upload Tiles" onAction="#handleTilesUpload"/>
+        <Label fx:id="tileFilesStatusLabel" text="No files chosen" textFill="gray"/>
+         <Button text="Generate Mosaic" onAction="#goToStep3"/>
+    </VBox>
+
+    <VBox fx:id="step3" spacing="20" alignment="CENTER" visible="false">
+        <Label text="Step 3: Your Mosaic"/>
+        <ScrollPane fitToWidth="true" fitToHeight="true" VBox.vgrow="ALWAYS">
+            <Group>
+                <GridPane fx:id="mosaicGrid" alignment="CENTER"/>
+            </Group>
+        </ScrollPane>
+    </VBox>
+
+    <Button text="Load Project" onAction="#openProject" StackPane.alignment="TOP_LEFT"/>
+    <Button fx:id="saveProjectBtn" text="Save Project" onAction="#saveProject" StackPane.alignment="TOP_RIGHT" visible="false"/>
+    
+</StackPane>
