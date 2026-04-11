@@ -14,6 +14,10 @@
 **RGB:** color vaues of red, blue and green. Why not yellow? I don't know. 
 
 ---
+<img width="1107" height="566" alt="image" src="https://github.com/user-attachments/assets/b531f6dc-aec7-4ed2-941b-803b69190f1f" />
+
+picture of my good friend and roommate Brage with 100px resolution and 1000 pics from lorempicsum as tiles. 0.7 (very large, scale is 0.0 - 1.0) penalty for adjacent. 
+---
 
 ## 1. Application Description
 
